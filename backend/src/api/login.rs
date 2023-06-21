@@ -3,6 +3,7 @@ use axum::routing::post;
 use axum::{Json, Router};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 pub fn router() -> Router {
     Router::new().route("/", post(login_github))
@@ -31,7 +32,7 @@ enum LoginError {
 
 impl IntoResponse for LoginError {
     fn into_response(self) -> Response {
-        println!("{:?}", self);
+        info!("{:?}", self);
 
         (StatusCode::INTERNAL_SERVER_ERROR, "UNHANDLED_ERROR").into_response()
     }
