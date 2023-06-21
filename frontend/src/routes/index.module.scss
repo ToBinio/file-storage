@@ -1,0 +1,15 @@
+
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+
+  img {
+    height: 30px;
+
+    padding: 3px;
+
+    background-color: lightgray;
+    border-radius: 50%;
+  }
+}
