@@ -1,82 +1,83 @@
 import {createRouteData, parseCookie, refetchRouteData, useRouteData, useServerContext} from "solid-start";
 import {isServer, Show} from "solid-js/web";
-import {User} from "~/types/types";
-
 import styles from "./index.module.scss"
+import {decodeJwt} from "jose";
 
 export default function Home() {
 
-  let data = useRouteData<typeof routeData>();
+    let data = useRouteData<typeof routeData>();
 
-  function signIn() {
-    let clientId = "b06e85e5bb8f2bced706";
+    function signIn() {
+        let clientId = "b06e85e5bb8f2bced706";
 
-    window.location.href = "https://github.com/login/oauth/authorize?client_id=" + clientId + "&scope=read:user";
-  }
+        window.location.href = "https://github.com/login/oauth/authorize?client_id=" + clientId + "&scope=read:user";
+    }
 
-  function logOut() {
-    document.cookie = "githubToken=;max-age=0"
-    refetchRouteData("cookies").then(
-      () => {
-        refetchRouteData("user").then()
-      }
-    )
-  }
+    function logOut() {
+        document.cookie = "githubToken=;max-age=0"
+        refetchRouteData("cookies").then(
+            () => {
+                refetchRouteData("user").then()
+            }
+        )
+    }
 
-  return (
-    <main>
-      <div id={styles.header}>
-        <h2>Web Storage</h2>
+    return (
+        <main>
+            <div id={styles.header}>
+                <h2>Web Storage</h2>
 
-        <Show when={data.user() != undefined}>
-          name: {data.user()?.login}
-          <div>
-            <img src={data.user()?.avatar_url} alt="avatar"/>
-          </div>
-        </Show>
-      </div>
+                <Show when={data.user() != undefined}>
+                    huff
+                    {/*name: {data.user()?.login}*/}
+                    {/*<div>*/}
+                    {/*    <img src={data.user()?.avatar_url} alt="avatar"/>*/}
+                    {/*</div>*/}
+                </Show>
+            </div>
 
-      <button onclick={signIn}>
-        sign in
-      </button>
+            <button onclick={signIn}>
+                sign in
+            </button>
 
-      <Show when={data.cookies()?.githubToken != undefined}>
-        <button onclick={logOut}>
-          log out
-        </button>
-      </Show>
-    </main>
-  );
+            <Show when={data.user() != undefined}>
+                <button onclick={logOut}>
+                    log out
+                </button>
+            </Show>
+        </main>
+    );
 }
 
 export function routeData() {
-  let cookies = createRouteData(() => {
-    const event = useServerContext();
+    let user = createRouteData(() => {
+        const event = useServerContext();
 
-    let data = isServer
-      ? event.request.headers.get("cookie") ?? ""
-      : document.cookie;
+        let data = isServer
+            ? event.request.headers.get("cookie") ?? ""
+            : document.cookie;
 
-    console.log("update cookies " + data);
+        console.debug(data);
 
-    return parseCookie(data) as { githubToken: string };
-  }, {key: "cookies"})
+        let cookies = parseCookie(data) as { jwt: string }
 
-  let user = createRouteData(async ([, cookies]) => {
+        if (cookies.jwt == undefined) return undefined;
 
-    if (cookies == undefined || typeof cookies == 'string') throw "cookies could not be loaded"
+        console.log("cookie:" + cookies.jwt);
 
-    if (cookies.githubToken == undefined) return undefined
+        let token = "";
 
-    let res = await fetch("https://api.github.com/user", {
-      method: "GET",
-      headers: {Authorization: "Bearer " + cookies.githubToken}
-    })
+        try {
+            // @ts-ignore
+            token = decodeJwt(cookies.jwt);
+        } catch (e) {
 
-    console.log("update user data: " + cookies.githubToken);
+        }
 
-    return (await res.json()) as User;
-  }, {key: () => ["user", cookies()]});
+        console.log("token " + token);
 
-  return {cookies, user}
+        return token;
+    }, {key: "cookies"})
+
+    return {user}
 }

@@ -5,10 +5,13 @@ use tower_http::trace::TraceLayer;
 use tracing::{info, Level};
 
 mod api;
+mod jwt;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    tracing_subscriber::fmt()
+        .with_max_level(Level::DEBUG)
+        .init();
 
     let routes = Router::new()
         .nest("/api", api::router())
