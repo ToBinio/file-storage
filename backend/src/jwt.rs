@@ -21,10 +21,7 @@ impl Jwt {
             self,
             &jsonwebtoken::EncodingKey::from_secret("secret".as_ref()),
         )
-        .map_err(|e| {
-            debug!("{:?}", e);
-            JwtError::CouldNotSign
-        })
+        .map_err(|e| JwtError::CouldNotSign)
     }
 
     pub async fn from_github(access_token: String) -> Result<Self, JwtError> {
@@ -36,10 +33,7 @@ impl Jwt {
             .header("Authorization", format!("Bearer {access_token}"))
             .send()
             .await
-            .map_err(|e| {
-                debug!("{:?}", e);
-                JwtError::CouldNotCreate
-            })?;
+            .map_err(|e| JwtError::CouldNotCreate)?;
 
         let string = res.text().await.map_err(|_e| JwtError::CouldNotCreate)?;
 

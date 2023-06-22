@@ -35,22 +35,23 @@ impl IntoResponse for LoginError {
     fn into_response(self) -> Response {
         info!("{:?}", self);
 
-        (StatusCode::INTERNAL_SERVER_ERROR, "error: UNHANDLED_ERROR").into_response()
+        (StatusCode::INTERNAL_SERVER_ERROR, "error").into_response()
     }
 }
 
 async fn login_github(data: Json<LoginGithubRequest>) -> Result<Json<String>, LoginError> {
-    let client = reqwest::Client::new();
-
     let client_id = "b06e85e5bb8f2bced706";
     let client_secret = "4afc3de105b9b0cc76168909c6e7238f126fca09";
 
-    let res = client.post( format!("https://github.com/login/oauth/access_token?client_id={client_id}&client_secret={client_secret}&code={}",data.code))
+    let client = reqwest::Client::new();
+
+    //get github accessToken
+    let response = client.post( format!("https://github.com/login/oauth/access_token?client_id={client_id}&client_secret={client_secret}&code={}",data.code))
         .header("Accept","application/json")
         .send().await.map_err(|_e| LoginError::GithubApi)?;
 
     let response: GithubResponse =
-        serde_json::from_str(&res.text().await.map_err(|_e| LoginError::GithubApi)?)
+        serde_json::from_str(&response.text().await.map_err(|_e| LoginError::GithubApi)?)
             .map_err(|_e| LoginError::InvalidCode(data.code.to_string()))?;
 
     match response {

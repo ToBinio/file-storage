@@ -1,5 +1,7 @@
 export interface User {
-  login: string
+  user_name: string
   id: number
   avatar_url: string
 }
+
+export const JWT_COOKIE = "jwt";
