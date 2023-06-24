@@ -2,7 +2,7 @@ import {useRouteData, useSearchParams} from "solid-start";
 import {useNavigate} from "@solidjs/router";
 import {isServer} from "solid-js/web";
 import {createServerData$} from "solid-start/server";
-import {JWT_COOKIE} from "~/types/types";
+import {JWT_COOKIE} from "~/types/type";
 
 export default function Home() {
   const {token} = useRouteData<typeof routeData>();

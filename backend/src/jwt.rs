@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tracing::debug;
+use thiserror::Error;
 
 #[derive(Serialize, Deserialize)]
 pub struct Jwt {
@@ -8,9 +8,11 @@ pub struct Jwt {
     avatar_url: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum JwtError {
-    CouldNotCreate,
+    #[error("Could not create Token from Github api")]
+    CouldNotCreateFromGithub,
+    #[error("Could not sign the token")]
     CouldNotSign,
 }
 
@@ -33,12 +35,15 @@ impl Jwt {
             .header("Authorization", format!("Bearer {access_token}"))
             .send()
             .await
-            .map_err(|e| JwtError::CouldNotCreate)?;
+            .map_err(|e| JwtError::CouldNotCreateFromGithub)?;
 
-        let string = res.text().await.map_err(|_e| JwtError::CouldNotCreate)?;
+        let string = res
+            .text()
+            .await
+            .map_err(|_e| JwtError::CouldNotCreateFromGithub)?;
 
         let res: GithubResponse =
-            serde_json::from_str(&string).map_err(|_e| JwtError::CouldNotCreate)?;
+            serde_json::from_str(&string).map_err(|_e| JwtError::CouldNotCreateFromGithub)?;
 
         Ok(Jwt {
             user_name: res.login,

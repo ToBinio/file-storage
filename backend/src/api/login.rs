@@ -1,11 +1,12 @@
-use crate::jwt::{Jwt, JwtError};
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Json, Router};
 use reqwest::StatusCode;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use thiserror::Error;
 use tracing::info;
-use tracing::log::debug;
+
+use crate::jwt::{Jwt, JwtError};
 
 pub fn router() -> Router {
     Router::new().route("/", post(login_github))
@@ -24,11 +25,14 @@ enum GithubResponse {
     Fail { error: String },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 enum LoginError {
+    #[error("github api weird response")]
     GithubApi,
+    #[error("invalid login token {0}")]
     InvalidCode(String),
-    JwtError(JwtError),
+    #[error("could not create JWT-Token")]
+    JwtError { source: JwtError },
 }
 
 impl IntoResponse for LoginError {
@@ -52,15 +56,15 @@ async fn login_github(data: Json<LoginGithubRequest>) -> Result<Json<String>, Lo
 
     let response: GithubResponse =
         serde_json::from_str(&response.text().await.map_err(|_e| LoginError::GithubApi)?)
-            .map_err(|_e| LoginError::InvalidCode(data.code.to_string()))?;
+            .map_err(|_e| LoginError::GithubApi)?;
 
     match response {
         GithubResponse::Success { access_token } => {
             let jwt = Jwt::from_github(access_token)
                 .await
-                .map_err(|e| LoginError::JwtError(e))?
+                .map_err(|e| LoginError::JwtError { source: e })?
                 .sign()
-                .map_err(|e| LoginError::JwtError(e))?;
+                .map_err(|e| LoginError::JwtError { source: e })?;
 
             Ok(Json(jwt))
         }
